@@ -1,0 +1,20 @@
+.login-form,
+.signup-form {
+    width: 400px;
+    border: 1px solid grey;
+    border-radius: 10%;
+    padding: 0px 50px 0px 20px;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.input-box {
+    border: rgba(255, 255, 255, 0.8);
+}
+
+body {
+    background-image: url('../img/login-background.jpg')
+}
+
+#confirm {
+    padding-left: 100px;
+}

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./plugins/element-ui/index.css">
+
+</head>
+
+<body>
+    <div id="app">
+        <!--Adding assignment-->
+        <el-form :inline="true" :model="newAssignment" class="demo-form-inline">
+            <el-form-item label="Assignment: ">
+                <el-input v-model="newAssignment.assignmentName" placeholder="Assignment name"></el-input>
+            </el-form-item>
+            <el-form-item>
+                <input v-model="newAssignment.dueDate" type="datetime-local" id="due-date">
+                {{newAssignment.dueDate}}
+            </el-form-item>
+            <el-button icon="el-icon-plus" @click="addAssignment()"></el-button>
+        </el-form>
+
+        <!--Displaying assignments-->
+        <el-table :data="assignments" style="width: 100%">
+            <!--Check-->
+            <el-table-column width="100">
+                <el-button icon="el-icon-check" circle plain></el-button>
+            </el-table-column>
+
+            <!--Assignment-->
+            <el-table-column prop="assignmentName" label="Assignment" width="500">
+            </el-table-column>
+
+            <!--Due Date-->
+            <el-table-column prop="dueDate" label="Due Date" width="300">
+            </el-table-column>
+
+            <!--Status-->
+            <el-table-column prop="status" label="Status" width="300">
+                <template slot-scope="assignments">
+                    <span v-if="assignments.row.status === 0">Completed</span>
+                    <span v-else-if="assignments.row.status===1">Incomplete</span>
+                    <span v-else>Important</span>
+                </template>
+            </el-table-column>
+
+            <!--Star-->
+            <el-table-column>
+                <template slot-scope="assignments">
+                    <el-button type="warning" id="important" icon="el-icon-star-off" circle plain>
+                    </el-button>
+                </template>
+            </el-table-column>
+
+            <!--Edit-->
+            <el-table-column>
+                <template slot-scope="assignments">
+                    <el-button type="primary" icon="el-icon-edit" @click="getById" circle plain>
+                    </el-button>
+                </template>
+            </el-table-column>
+
+            <!--Delete-->
+            <el-table-column>
+                <template slot-scope="assignments">
+                    <el-button type="danger" icon="el-icon-delete" circle plain></el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+
+        <!--Edit Assignment Form-->
+        <el-dialog title="Edit Assignment" :visible.sync="dialogFormVisible">
+            <el-form :model="currentAssignment">
+                <el-form-item label="Assignment: " label-width="120px">
+                    <el-input v-model="currentAssignment.assignmentName" autocomplete="off"></el-input>
+                </el-form-item>
+                <el-form-item label="Due Date: " label-width="120px">
+                    <input v-model="currentAssignment.dueDate" type="datetime-local">
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="dialogFormVisible = false" plain>Edit</el-button>
+                <el-button type="danger" @click="dialogFormVisible = false" plain>Cancel</el-button>
+            </div>
+        </el-dialog>
+    </div>
+
+</body>
+<script src="./plugins/vue/vue.js"></script>
+<script src="./plugins/axios/axios.min.js"></script>
+<script src="./plugins/element-ui/index.js"></script>
+<script>
+    var vue = new Vue({
+        el: '#app',
+        data() {
+            return {
+                assignments: [{
+                    assignmentName: 'to do list project',
+                    dueDate: '2022-06-22',
+                    status: 0,
+                }, {
+                    assignmentName: 'to do list project',
+                    dueDate: '2022-06-22',
+                    status: 1,
+                }, {
+                    assignmentName: 'to do list project',
+                    dueDate: '2022-06-22',
+                    status: 2,
+                }],
+
+                newAssignment: {},
+                currentAssignment: {},
+                dialogFormVisible: false,
+            }
+        },
+
+        // mounted() {
+        //
+        // },
+
+        methods: {
+            resetForm() {
+                this.newAssignment = {};
+            },
+
+            getAll() {
+                axios.get('/assignments').then((resp) => {
+                    if (resp.data.code === 1) {
+                        this.assignments = resp.data.data;
+                    } else {
+                        this.$message.error(resp.data.message);
+                    }
+                })
+            },
+
+            addAssignment() {
+                axios.post('/assignments', this.newAssignment).then((resp) => {
+                    if (resp.data.code === 1) {
+                        this.$message.success('Assignment added successfully');
+                    } else {
+                        this.$message.error(resp.data.message);
+                    }
+                }).finally(() => {
+                    this.resetForm();
+                    this.getAll();
+                })
+            },
+
+            getById() {
+                this.dialogFormVisible = true;
+                axios.get('/assignments/' + id).then((resp) => {
+                    if (resp.data.code === 1) {
+                        this.currentAssignment = resp.data.data;
+                    } else {
+                        this.$message.error(resp.data.message);
+                    }
+                })
+
+            },
+
+
+        }
+    })
+</script>
+
+</html>

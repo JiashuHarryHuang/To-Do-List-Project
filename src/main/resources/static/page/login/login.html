@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../../plugins/element-ui/index.css">
+    <link rel="stylesheet" href="../../styles/login.css">
+</head>
+
+<body>
+    <div id="app">
+        <div id="login-form" class="login-form">
+            <h2>Please Sign In</h2>
+            <span>Don't have an account? </span><a href="./signup.html">Sign Up</a>
+            <el-form :label-position="labelPosition" label-width="80px" :model="user" ref="user" status-icon
+                :rules="rules">
+
+                <!--Username-->
+                <el-form-item label="Username: " prop="username">
+                    <el-input class="input-box" placeholder="Please enter your username" v-model="user.username">
+                    </el-input>
+                </el-form-item>
+
+                <!--Password-->
+                <el-form-item label="Password: " prop="password">
+                    <el-input placeholder="Please enter your password" v-model="user.password" show-password>
+                    </el-input>
+                </el-form-item>
+
+                <!--Log in button-->
+                <el-form-item>
+                    <el-button @click="submitForm('user')" plain>Log In</el-button>
+                </el-form-item>
+            </el-form>
+        </div>
+    </div>
+</body>
+<script src="../../plugins/vue/vue.js"></script>
+<script src="../../plugins/axios/axios.min.js"></script>
+<script src="../../plugins/element-ui/index.js"></script>
+<script>
+    new Vue({
+        el: '#app',
+        data() {
+            //Make sure username is not empty
+            var validateUsername = (rule, value, callback) => {
+                if (value.length < 3) {
+                    callback(new Error('Username needs to have more than 2 characters'))
+                } else {
+                    callback()
+                }
+            };
+
+            //Make sure password is more than 6 characters
+            var validatePass = (rule, value, callback) => {
+                if (value.length < 6 || value.length > 18) {
+                    callback(new Error('Password has to be between 6-18 characters'))
+                } else {
+                    callback()
+                }
+            };
+            return {
+                user: {
+                    username: '',
+                    password: '',
+                },
+                labelPosition: 'right',
+
+                //Apply data validation
+                rules: {
+                    username: [
+                        { 'validator': validateUsername, trigger: 'blur' }
+                    ],
+                    password: [
+                        { 'validator': validatePass, trigger: 'blur' }
+                    ],
+                }
+            };
+        },
+
+        mounted() {
+            var location = window.location.href;
+            var idx = location.indexOf("?");
+
+            //Check if user has just created an account
+            if (idx !== -1) {
+                this.$message({
+                    showClose: true,
+                    message: 'Account created successfully, Please sign in',
+                    type: 'success'
+                });
+            }
+        },
+
+        methods: {
+            submitForm() {
+                axios.post('/user/login', this.user).then((resp) => {
+                    console.log(resp);
+                    if (resp.data.code === 1) { //Log in successfully
+                        window.location.href = '../../index.html'
+                    } else {
+                        this.$message({ //Log in failure
+                            showClose: true,
+                            message: resp.data.message,
+                            type: 'error'
+                        });
+                    }
+                })
+            },
+        }
+    })
+</script>
+
+</html>

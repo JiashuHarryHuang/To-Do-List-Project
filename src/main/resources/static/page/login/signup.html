@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../../plugins/element-ui/index.css">
+    <link rel="stylesheet" href="../../styles/login.css">
+</head>
+
+<body>
+    <div id="app">
+        <div class="signup-form" id="signup-form">
+            <h2>Please Sign Up</h2>
+            <span>Already have an account? </span><a href="./login.html">Sign In</a>
+            <el-form :model="user" status-icon :rules="rules" ref="user" label-width="100px" class="demo-ruleForm">
+
+                <!--Username-->
+                <el-form-item label="Username: " prop="username">
+                    <el-input class="input-box" placeholder="Please enter your username" v-model="user.username">
+                    </el-input>
+                </el-form-item>
+
+                <!--Password-->
+                <el-form-item label="Password: " prop="password">
+                    <el-input type="password" placeholder="Please enter your password" v-model="user.password"
+                        autocomplete="off" show-password></el-input>
+                </el-form-item>
+
+                <!--Reenter password-->
+                <el-form-item label="Confirm: " prop="checkPassword">
+                    <el-input type="password" placeholder="Please confirm your password" v-model="user.checkPassword"
+                        autocomplete="off" show-password></el-input>
+                </el-form-item>
+
+                <!--Sign up button-->
+                <el-form-item>
+                    <el-button @click="submitForm('user')" plain>Sign Up</el-button>
+                </el-form-item>
+            </el-form>
+        </div>
+    </div>
+</body>
+<script src="../../plugins/vue/vue.js"></script>
+<script src="../../plugins/axios/axios.min.js"></script>
+<script src="../../plugins/element-ui/index.js"></script>
+<script>
+    new Vue({
+        el: '#app',
+        data() {
+            //Make sure username is not empty
+            var validateUsername = (rule, value, callback) => {
+                if (!value) {
+                    callback(new Error('Username cannot be empty'))
+                } else {
+                    callback()
+                }
+            };
+
+            //Make sure password is more than 6 characters and is the same as confirmed password
+            var validatePass = (rule, value, callback) => {
+                if (value.length < 6) {
+                    callback(new Error('Password has to be more than 6 characters'));
+                } else {
+                    if (this.user.checkPassword !== '') {
+                        this.$refs.user.validateField('checkPass');
+                    }
+                    callback();
+                }
+            };
+
+            //Make sure password is more than 6 characters and is the same as confirmed password
+            var validatePass2 = (rule, value, callback) => {
+                if (value.length < 6) {
+                    callback(new Error('Password has to be more than 6 characters'));
+                } else if (value !== this.user.password) {
+                    callback(new Error('Your passwords have to match!'));
+                } else {
+                    callback();
+                }
+            };
+
+            return {
+                user: {
+                    username: '',
+                    password: '',
+                    checkPassword: '',
+                },
+                rules: {
+                    username: [
+                        { 'validator': validateUsername, trigger: 'blur' }
+                    ],
+                    password: [
+                        { 'validator': validatePass, trigger: 'blur' }
+                    ],
+                    checkPassword: [
+                        { 'validator': validatePass2, trigger: 'blur' }
+                    ],
+                }
+            }
+        },
+        methods: {
+            submitForm() {
+                axios.post('/user/signup', this.user).then((resp) => {
+                    if (resp.data.code === 1) {
+                        window.location.href = './login.html?signedUp=true';
+                        this.$message({
+                            showClose: true,
+                            message: 'Account created successfully, Please sign in',
+                            type: 'success'
+                        });
+                    } else {
+                        this.$message({
+                            showClose: true,
+                            message: resp.data.message,
+                            type: 'error'
+                        })
+                    }
+                })
+            }
+        }
+    })
+</script>
+
+</html>
