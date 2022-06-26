@@ -106,11 +106,6 @@
                 axios.post('/user/signup', this.user).then((resp) => {
                     if (resp.data.code === 1) {
                         window.location.href = './login.html?signedUp=true';
-                        this.$message({
-                            showClose: true,
-                            message: 'Account created successfully, Please sign in',
-                            type: 'success'
-                        });
                     } else {
                         this.$message({
                             showClose: true,

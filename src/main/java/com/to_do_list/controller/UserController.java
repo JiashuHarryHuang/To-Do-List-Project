@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 @RestController
@@ -24,19 +22,18 @@ public class UserController {
     private UserService userService;
 
     /**
-     * Login
+     * Log in
      * @param user Contains username and password
      * @param session Used to store user id
      * @return Success message
      */
     @PostMapping("/login")
-    public Result<String> login(@RequestBody User user, HttpSession session) {
+    public Result<User> login(@RequestBody User user, HttpSession session) {
         log.info("Loggin in: {}", user.toString());
 
         //Encrypt password
         String password = user.getPassword();
         password = DigestUtils.md5DigestAsHex(password.getBytes());
-        log.info(password);
 
         //Query by condition: SELECT * FROM user WHERE username = ?
         LambdaQueryWrapper<User> userQueryWrapper = new LambdaQueryWrapper<>();
@@ -55,11 +52,17 @@ public class UserController {
 
         //Store user id into session.
         session.setAttribute("user", userInTbl.getId());
-        return Result.success("Logged in successfully!");
+
+        return Result.success(userInTbl);
     }
 
+    /**
+     * Sign up
+     * @param user Contains username and password
+     * @return Success message
+     */
     @PostMapping("/signup")
-    public Result<String> signup(@RequestBody User user, HttpServletResponse response) {
+    public Result<String> signup(@RequestBody User user) {
         log.info("Signing up: {}", user.toString());
 
         //Check if username already exists
@@ -81,5 +84,19 @@ public class UserController {
         userService.save(user);
 
         return Result.success("Signed up successfully");
+    }
+
+    /**
+     * Log out
+     * @param session Session that contains user data
+     * @return Success message
+     */
+    @PostMapping("/logout")
+    public Result<String> logout(HttpSession session) {
+        log.info("Logging out");
+
+        //Remove data stored in session
+        session.removeAttribute("user");
+        return Result.success("Logged out successfully");
     }
 }

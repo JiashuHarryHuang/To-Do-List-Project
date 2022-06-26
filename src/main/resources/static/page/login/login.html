@@ -64,8 +64,8 @@
             };
             return {
                 user: {
-                    username: '',
-                    password: '',
+                    username: 'hjs',
+                    password: '111111',
                 },
                 labelPosition: 'right',
 
@@ -83,26 +83,40 @@
 
         mounted() {
             var location = window.location.href;
-            var idx = location.indexOf("?");
+            var idx1 = location.indexOf("?");
+            var idx2 = location.indexOf("=");
 
-            //Check if user has just created an account
-            if (idx !== -1) {
-                this.$message({
-                    showClose: true,
-                    message: 'Account created successfully, Please sign in',
-                    type: 'success'
-                });
+            //Check if user just created an account or just logged out
+            if (idx1 !== -1) {
+                var data = location.slice(idx1 + 1, idx2);
+                console.log(data);
+                //Check if user has just created an account
+                if (data === 'signedUp') {
+                    this.$message({
+                        showClose: true,
+                        message: 'Account created successfully, Please sign in',
+                        type: 'success'
+                    });
+                } else if (data === 'loggedOut') { //User has just logged out
+                    this.$message({
+                        showClose: true,
+                        message: 'Logged out successfully',
+                        type: 'success'
+                    })
+                }
+
             }
         },
 
         methods: {
             submitForm() {
                 axios.post('/user/login', this.user).then((resp) => {
-                    console.log(resp);
                     if (resp.data.code === 1) { //Log in successfully
+                        //Store the user data into browser
+                        localStorage.setItem('userInfo', JSON.stringify(resp.data.data))
                         window.location.href = '../../index.html'
                     } else {
-                        this.$message({ //Log in failure
+                        this.$message({ //Log in failed
                             showClose: true,
                             message: resp.data.message,
                             type: 'error'

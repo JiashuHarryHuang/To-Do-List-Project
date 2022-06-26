@@ -7,28 +7,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="stylesheet" href="./plugins/element-ui/index.css">
-
+    <link rel="stylesheet" href="./styles/index.css">
 </head>
 
 <body>
     <div id="app">
+        <!--Header-->
+        <div class="header" id="header">
+            <span class="title">To Do List</span>
+            <span class="right el-dropdown-link">
+                <el-dropdown @command="handleCommand">
+                    <!--Avatar-->
+                    <el-button icon="el-icon-user-solid" circle plain>
+                        <i class="el-icon-arrow-down el-icon--right"></i>
+                    </el-button>
+                    <el-dropdown-menu slot="dropdown">
+                        <!--Log out-->
+                        <el-dropdown-item command="log out">Log out</el-dropdown-item>
+                    </el-dropdown-menu>
+                </el-dropdown>
+            </span>
+            <span class="right">Welcome {{userInfo.username}}</span>
+            <div style="clear: both"></div> <!--Clear float-->
+        </div>
+
         <!--Adding assignment-->
         <el-form :inline="true" :model="newAssignment" class="demo-form-inline">
             <el-form-item label="Assignment: ">
                 <el-input v-model="newAssignment.assignmentName" placeholder="Assignment name"></el-input>
             </el-form-item>
             <el-form-item>
-                <input v-model="newAssignment.dueDate" type="datetime-local" id="due-date">
-                {{newAssignment.dueDate}}
+                <el-date-picker
+                        v-model="newAssignment.dueDate"
+                        type="datetime"
+                        value-format="yyyy-MM-dd HH:mm:ss">
+                </el-date-picker>
             </el-form-item>
             <el-button icon="el-icon-plus" @click="addAssignment()"></el-button>
+            <el-button type="success" @click="deleteCompletedAssignment()" plain>Delete Completed Assignment</el-button>
         </el-form>
 
         <!--Displaying assignments-->
-        <el-table :data="assignments" style="width: 100%">
+        <el-table :data="assignments" style="width: 100%" :row-class-name="tableRowClassName">
             <!--Check-->
             <el-table-column width="100">
-                <el-button icon="el-icon-check" circle plain></el-button>
+                <template slot-scope="assignments">
+                    <el-button icon="el-icon-check" @click="markAsComplete(assignments.row)" circle plain>
+                    </el-button>
+                </template>
             </el-table-column>
 
             <!--Assignment-->
@@ -51,15 +77,18 @@
             <!--Star-->
             <el-table-column>
                 <template slot-scope="assignments">
-                    <el-button type="warning" id="important" icon="el-icon-star-off" circle plain>
+                    <el-button v-if="assignments.row.status === 2" type="warning" icon="el-icon-star-on"
+                               @click="markImportant(assignments.row)" circle plain>
                     </el-button>
+                    <el-button v-else type="warning" icon="el-icon-star-off"
+                               @click="markImportant(assignments.row)" circle plain></el-button>
                 </template>
             </el-table-column>
 
             <!--Edit-->
             <el-table-column>
                 <template slot-scope="assignments">
-                    <el-button type="primary" icon="el-icon-edit" @click="getById" circle plain>
+                    <el-button type="primary" icon="el-icon-edit" @click="getById(assignments.row.id)" circle plain>
                     </el-button>
                 </template>
             </el-table-column>
@@ -67,7 +96,14 @@
             <!--Delete-->
             <el-table-column>
                 <template slot-scope="assignments">
-                    <el-button type="danger" icon="el-icon-delete" circle plain></el-button>
+                    <el-popconfirm confirm-button-text='Yes'
+                                   cancel-button-text='No'
+                                   title="Are you sure about deleting it?"
+                                   @confirm="deleteById(assignments.row.id)">
+                        <el-button slot="reference" type="danger" icon="el-icon-delete"
+                                   circle plain></el-button>
+                    </el-popconfirm>
+
                 </template>
             </el-table-column>
         </el-table>
@@ -79,11 +115,15 @@
                     <el-input v-model="currentAssignment.assignmentName" autocomplete="off"></el-input>
                 </el-form-item>
                 <el-form-item label="Due Date: " label-width="120px">
-                    <input v-model="currentAssignment.dueDate" type="datetime-local">
+                    <el-date-picker
+                            v-model="currentAssignment.dueDate"
+                            type="datetime"
+                            value-format="yyyy-MM-dd HH:mm:ss">
+                    </el-date-picker>
                 </el-form-item>
             </el-form>
             <div slot="footer" class="dialog-footer">
-                <el-button type="primary" @click="dialogFormVisible = false" plain>Edit</el-button>
+                <el-button type="primary" @click="updateAssignment" plain>Edit</el-button>
                 <el-button type="danger" @click="dialogFormVisible = false" plain>Cancel</el-button>
             </div>
         </el-dialog>
@@ -115,20 +155,38 @@
                 newAssignment: {},
                 currentAssignment: {},
                 dialogFormVisible: false,
+                userInfo: {},
             }
         },
 
-        // mounted() {
-        //
-        // },
+        created() {
+            //Get userInfo from browser local storage
+            const userInfo = window.localStorage.getItem('userInfo');
+            if (userInfo) {
+                this.userInfo = JSON.parse(userInfo);
+            }
+            this.getAll();
+        },
 
         methods: {
+            //Reset the adding assignment form
             resetForm() {
                 this.newAssignment = {};
             },
 
+            //Change the color of the row according to status
+            tableRowClassName({ row }) {
+                if (row.status === 0) {
+                    return 'success-row';
+                } else if (row.status === 2) {
+                    return 'warning-row';
+                }
+                return '';
+            },
+
+            //Get the list of assignment from database
             getAll() {
-                axios.get('/assignments').then((resp) => {
+                axios.get('/assignment').then((resp) => {
                     if (resp.data.code === 1) {
                         this.assignments = resp.data.data;
                     } else {
@@ -137,10 +195,11 @@
                 })
             },
 
+            //Add an assignment to database
             addAssignment() {
-                axios.post('/assignments', this.newAssignment).then((resp) => {
+                axios.post('/assignment', this.newAssignment).then((resp) => {
                     if (resp.data.code === 1) {
-                        this.$message.success('Assignment added successfully');
+                        this.$message.success(resp.data.data);
                     } else {
                         this.$message.error(resp.data.message);
                     }
@@ -150,9 +209,10 @@
                 })
             },
 
-            getById() {
+            //Get data of an assignment by id
+            getById(id) {
                 this.dialogFormVisible = true;
-                axios.get('/assignments/' + id).then((resp) => {
+                axios.get('/assignment/' + id).then((resp) => {
                     if (resp.data.code === 1) {
                         this.currentAssignment = resp.data.data;
                     } else {
@@ -162,7 +222,84 @@
 
             },
 
+            //Delete assignment
+            deleteById(id) {
+                axios.delete('/assignment/' + id).then((resp) => {
+                    if (resp.data.code === 1) {
+                        this.$message.success(resp.data.data);
+                    } else {
+                        this.$message.error(resp.data.message);
+                    }
+                }).finally(() => {
+                    this.getAll();
+                })
+            },
 
+            deleteCompletedAssignment() {
+                axios.delete('/assignment/clean').then((resp) => {
+                    if (resp.data.code === 1) {
+                        this.$message.success(resp.data.data);
+                    } else {
+                        this.$message.error(resp.data.message);
+                    }
+                }).finally(() => {
+                    this.getAll();
+                })
+            },
+
+            //Update assignment
+            updateAssignment() {
+                axios.put('/assignment', this.currentAssignment).then((resp) => {
+                    if (resp.data.code === 1) {
+                        this.dialogFormVisible = false;
+                        this.$message.success(resp.data.data);
+                        this.getAll();
+                    } else {
+                        this.$message.error(resp.data.message);
+                    }
+                })
+            },
+
+            markImportant(row) {
+                var newStatus = (row.status === 2) ? 1 : 2;
+                axios.put('/assignment', {id: row.id, status: newStatus}).then((resp) => {
+                    if (resp.data.code === 1) {
+                        this.getAll();
+                    } else {
+                        this.$message.error(resp.data.message);
+                    }
+                })
+            },
+
+            markAsComplete(row) {
+                var newStatus = (row.status === 0) ? 1 : 0;
+                axios.put('/assignment', {id: row.id, status: newStatus}).then((resp) => {
+                    if (resp.data.code === 1) {
+                        this.getAll();
+                    } else {
+                        this.$message.error(resp.data.message);
+                    }
+                })
+            },
+
+            //Tie event handlers to the dropdown menu
+            handleCommand(command) {
+                if (command === 'log out') {
+                    this.logOut();
+                }
+            },
+
+            //Log out
+            logOut() {
+                axios.post('/user/logout').then((resp) => {
+                    if (resp.data.code === 1) {
+                        localStorage.removeItem('userInfo')
+                        window.location.href = 'page/login/login.html?loggedOut=true'
+                    } else {
+                        this.$message.error('Something');
+                    }
+                })
+            }
         }
     })
 </script>
